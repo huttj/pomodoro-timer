@@ -1,21 +1,29 @@
 import { observable } from 'mobx';
 import differenceInMinutes from '../util/differenceInMinutes';
+import countdown from '../util/countdown';
 
 
 class TimerStore {
 
   @observable workLength = 25;
   @observable breakLength = 5;
+  @observable longBreakLength = 15;
   @observable currentTimer = null;
-  @observable currentTask = '';
-  
+  @observable roundsCompleted = 0;
+
   startWork() {
-    console.log('this', this);
     this.currentTimer = {
       workStart: Date.now(),
       workEnd: null,
       breakEnd: null,
+      isLong: false,
     };
+
+    // Create a long break after every four rounds
+    if (this.roundsCompleted % 5 === 4) {
+      this.currentTimer.workEnd = this.currentTimer.workStart;
+      this.currentTimer.isLong = true;
+    }
   }
   
   endWork() {
@@ -26,13 +34,29 @@ class TimerStore {
     this.currentTimer.breakEnd = Date.now();
   }
 
-  setTask(task) {
-    console.log('setTask', task);
-    this.currentTask = task;
-  }
-
   reset() {
     this.currentTimer = null;
+  }
+
+  getRemainingTime() {
+  
+    const { currentTimer, workLength, breakLength, longBreakLength } = this;
+
+    if (!currentTimer) return '';
+  
+    const actualBreakLength = currentTimer.isLong ? longBreakLength : breakLength;
+
+    if (currentTimer.breakEnd) {
+      return '';
+  
+    } else if (currentTimer.workEnd) {
+      return countdown(currentTimer.workEnd, Date.now(), actualBreakLength);
+  
+    } else if (currentTimer.workStart) {
+      return countdown(currentTimer.workStart, Date.now(), workLength);
+    }
+  
+    throw new Error('Unknown state');
   }
 
   checkStatus() {
@@ -40,22 +64,26 @@ class TimerStore {
       currentTimer,
       breakLength,
       workLength,
+      longBreakLength,
     } = this;
-        
+
     // Not running; do nothing
     if (!currentTimer) return;
 
+    const actualBreakLength = currentTimer.isLong ? longBreakLength : breakLength;
+        
     // Break done
     if (currentTimer.breakEnd) {
-      return;
+      return '';
 
     // On break
     } else if (currentTimer.workEnd) {
 
-      const remainingTime = breakLength - differenceInMinutes(currentTimer.workEnd, Date.now());
+      const remainingTime = actualBreakLength - differenceInMinutes(currentTimer.workEnd, Date.now());
 
       if (remainingTime <= 0) {
         this.endBreak();
+        this.roundsCompleted++;
         alert('Break over!');
       }
 
@@ -73,6 +101,24 @@ class TimerStore {
 
   isRunning() {
     return this.currentTimer && !this.currentTimer.breakEnd;
+  }
+
+  getStatus() {
+    const { currentTimer, workLength, breakLength, longBreakLength } = this;
+
+    if (!currentTimer || currentTimer.breakEnd) {
+      const rc = this.roundsCompleted;
+      if (!rc) {
+        return 'Ready';
+      }
+      return `${rc} round${rc == 1 ? '' : 's'} completed`;
+    
+    } else if (currentTimer.workEnd) {
+      return 'On Break';
+  
+    } else if (currentTimer.workStart) {
+      return 'Working'
+    }
   }
 
 }

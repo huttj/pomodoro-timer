@@ -5,8 +5,6 @@ import TaskStore from './stores/TaskStore';
 
 import Tasks from './components/Tasks';
 
-import calculateRemainingTime from './util/calculateRemainingTime';
-
 
 export default class App extends React.Component {
 
@@ -26,7 +24,7 @@ export default class App extends React.Component {
     this.setState({});
 
     if (TimerStore.isRunning()) {
-      this.timer = setTimeout(() => this.timeLoop(), 1000);
+      this.timer = setTimeout(() => this.timeLoop(), 999);
     }
   }
 
@@ -54,7 +52,8 @@ export default class App extends React.Component {
 
     return (
       <div style={styles.appContainer}>
-        <p style={styles.remainingTime}>{calculateRemainingTime(TimerStore)}</p>
+        <p style={styles.status}>{TimerStore.getStatus()}</p>
+        <p style={styles.remainingTime}>{TimerStore.getRemainingTime()}</p>
         {button}
         <Tasks />
       </div> 
@@ -82,8 +81,12 @@ const styles = {
   },
   remainingTime: {
     fontSize: 60,
-    marginBottom: 24,
+    margin: '16px 24px 24px',
     textShadow: '2px 2px 1px rgba(0,0,0,.34)',
     minHeight: 70,
+  },
+  status: {
+    margin: 0,
+    textShadow: '2px 2px 1px rgba(0,0,0,.34)',
   },
 }

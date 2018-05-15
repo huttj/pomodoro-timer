@@ -10,6 +10,7 @@ class TimerStore {
   @observable longBreakLength = 15;
   @observable currentTimer = null;
   @observable roundsCompleted = 0;
+  @observable longBreakAfter = 4;
 
   startWork() {
     this.currentTimer = {
@@ -20,7 +21,8 @@ class TimerStore {
     };
 
     // Create a long break after every four rounds
-    if (this.roundsCompleted % 5 === 4) {
+    const {longBreakAfter} = this;
+    if (this.roundsCompleted % (longBreakAfter + 1) === longBreakAfter) {
       this.currentTimer.workEnd = this.currentTimer.workStart;
       this.currentTimer.isLong = true;
     }
@@ -107,7 +109,11 @@ class TimerStore {
     const { currentTimer, workLength, breakLength, longBreakLength } = this;
 
     if (!currentTimer || currentTimer.breakEnd) {
-      const rc = this.roundsCompleted;
+
+      // Since we're counting long breaks (to avoid complexity around a `longBreakCompleted`
+      // flag or a separate count), this counts only the actual work rounds completed.
+      const rc = this.roundsCompleted - Math.floor(this.roundsCompleted / (this.longBreakAfter));
+
       if (!rc) {
         return 'Ready';
       }
